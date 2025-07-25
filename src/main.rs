@@ -152,9 +152,11 @@ fn comprehend_path_to_markdown(
 ) -> io::Result<String> {
     let mut result = String::new();
 
-    dbg!(root_path);
-
     let mut root_path = root_path.to_path_buf();
+    println!("root = {}", root_path.display());
+
+    let mut n_files = 0_usize;
+    let mut n_folders = 0_usize;
 
     for entry_r in Walk::new(&root_path) {
         let entry = entry_r.map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
@@ -168,6 +170,8 @@ fn comprehend_path_to_markdown(
         // 根目录=0，根目录下文件(夹)=1
         let level = entry.depth() + 1;
         if path.is_dir() {
+            println!("dir {}", path.display());
+            n_folders += 1;
             push_title(
                 &mut result,
                 match level {
@@ -183,6 +187,8 @@ fn comprehend_path_to_markdown(
         }
         // Process files in this directory
         else if path.is_file() && file_filter(path) {
+            println!("convert {}", path.display());
+            n_files += 1;
             match file_to_markdown(&root_path, &path, level) {
                 Ok(md) => push_str!(result, "{md}"),
                 // 捕获UTF-8错误：一般是二进制文件，不应展示
@@ -194,6 +200,7 @@ fn comprehend_path_to_markdown(
         }
     }
 
+    println!("Done with {} bytes, {n_files} files, {n_folders} folders.", result.len());
     Ok(result)
 }
 
